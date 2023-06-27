@@ -1,0 +1,60 @@
+\documentclass[compress]{beamer}
+\usetheme{Warsaw}
+\useoutertheme{infolines}
+\setbeamertemplate{page number in head/foot}[totalframenumber]
+
+%-----------------------------------------------------------------
+% Pacotes
+%-----------------------------------------------------------------
+
+% potuguese
+\usepackage[T1]{fontenc} %Not needed by LuaLaTeX or XeLaTeX
+\usepackage[portuguese]{babel}
+
+\usepackage[bibstyle=authortitle, citestyle=authoryear]{biblatex}
+\addbibresource{References.bib}
+\usepackage{csquotes}
+
+%-----------------------------------------------------------------
+% Informações
+%-----------------------------------------------------------------
+\title{Subtópico}
+\subtitle{Área: Tópico}
+\author{Antonino Feitosa}
+\institute[]{ \\ \smallskip \textit{\href{mailto:antonino\_feitosa@yahoo.com.br}{antonino\_feitosa@yahoo.com.br}}}
+\date{\today}
+
+%-----------------------------------------------------------------
+% Capa
+%-----------------------------------------------------------------
+\begin{document}
+    \begin{frame}[noframenumbering]
+        \titlepage
+        Adaptação de \cite{referência}.
+    \end{frame}
+    \begin{frame}[noframenumbering]{Sumário}
+        \tableofcontents
+    \end{frame}
+    
+%-----------------------------------------------------------------
+% Corpo
+%-----------------------------------------------------------------
+
+
+\input{"Model.body.tex"}
+
+
+%-----------------------------------------------------------------
+% Exercícios
+%-----------------------------------------------------------------
+
+\input{"Model.test.tex"}
+
+%-----------------------------------------------------------------
+% Referências
+%-----------------------------------------------------------------
+    \appendix
+    \begin{frame}[noframenumbering, allowframebreaks]{Referências}
+        \printbibliography
+    \end{frame}
+\end{document}

@@ -1,0 +1,209 @@
+<!--
+
+- Section
+# frame title
+	#E block title
+	example block body
+	#A block title
+	alert block body
+	block
+		Item
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Latex Beamer Converter</title>
+	<style>
+		textarea {
+			-moz-tab-size: 4;
+			tab-size:4;
+		}
+		.buttons {
+			text-align: right;
+		}
+	</style>
+</head>
+<body>
+	<table>
+	  <tr>
+		<th><label>Input:<br><textarea id="input" rows="30" cols="80">
+- Section
+#
+	frame whitout title
+# frame title
+	#E example block title
+	example block body
+		example item 1
+		example item 2
+	#A alert block title
+	alert block body
+		alert item 1
+		alert item 2
+	# simple block title
+	simple block body
+-- sub section
+	simple block 1
+		Item 1
+		Item 2
+	simple block 2
+</textarea></label></th>
+		<th><label>Output:<br><textarea id="output" rows="30" cols="80"></textarea></label></th>
+	  </tr>
+	  <tr>
+		<th class="buttons"><button type="button" onclick="clearFields()">Clear</button></th>
+		<th class="buttons">
+			<button type="button" onclick="copyOutput()">Copy</button>
+			<button type="button" onclick="process()">Process</button>
+		</th>
+	  </tr>
+	</table>
+	<script>
+		function clearFields(){
+			document.getElementById("input").value = "";
+			document.getElementById("output").value = "";
+		}
+		
+		function process(){
+			const textInput = document.getElementById("input").value;
+			const result = convert(textInput);
+			document.getElementById("output").value = result;
+		}
+		
+		function convert(textInput){
+			const input = {
+				lines: textInput.split("\n"),
+				index: 0,
+				nextLine: function(){this.index++;},
+				getLine: function(){
+					let text = this.lines[this.index] || "";
+					text = text.replaceAll("_", "\\_");
+					text = text.replaceAll("%", "\\%");
+					text = text.trimRight();
+					return text;
+				},
+				hasLine: function(){return input.getLine() != null && input.index < input.lines.length;},
+				hasTitle: function(){return input.hasLine() && (this.getLine().startsWith("#") || this.getLine().startsWith("\t#"))},
+				startsWith: function(prefix){return this.hasLine() && this.getLine().startsWith(prefix)},
+				isFrameLine: function(){return this.getLine().length > 0 && this.startsWith("#")},
+				isSection: function(){return this.getLine().length > 0 && this.startsWith("-")},
+				isBlockLine: function(){return this.startsWith("\t") && !this.isListLine();},
+				isListLine: function(){return this.startsWith("\t\t")}
+			};
+			let output = "";
+			while(input.hasLine()){
+				if(input.isSection()){
+					output += "\n" + parseSection(input, "\t");
+				} else if(input.isFrameLine()){
+					output += "\n" + parseFrame(input, "\t");
+				} else {
+					output += input.getLine(); // other commands
+					input.nextLine();
+				}
+			}
+			return output;
+		}
+		
+		function parseSection(input, prefix){
+			output = "\\section";
+			isSubsection = input.startsWith("--");
+			if(isSubsection){
+				output = "\\subsection*";
+			}
+			title = input.getLine().substring(2).trimLeft()
+			output += "{" + title + "}\n";
+			input.nextLine();
+			if(!isSubsection){
+				output += prefix + "\\begin{frame}\\begin{center}\{\\LARGE " + title + "}\\end{center}\\end{frame}\n";
+			}
+			return output;
+		}
+		
+		function parseFrame(input, prefix){
+			output = "";
+			title = "";
+			if(input.hasTitle()){
+				title = "{" + input.getLine().substring(2) + "}";
+				input.nextLine();
+			}
+			output += prefix + "\\begin{frame}" + title + "\n";
+			output += parseBlock(input, prefix + "\t");
+			output += prefix + "\\end{frame}\n"
+			output += "%------------------------------------------------\n\n"
+			return output;
+		}
+		
+		function parseBlockTitle(input){
+			if(input.hasTitle()){
+				line = input.getLine().trimLeft().substring(1);
+				block = "block";
+				if(line[0] == "A"){
+					block = "alertblock"
+				} else if(line[0] == "E"){
+					block = "exampleblock"
+				}
+				line = line.substring(1).trimLeft();
+				title = line;
+				input.nextLine();
+				return {title: title, block: block};
+			} else {
+				return {title: "", block: "block"};
+			}
+		}
+		
+		function parseBlock(input, prefix){
+			output = "";
+			pauseForFirstTitle = "\\pause"
+			while(input.isBlockLine() || input.isListLine()){
+				blockConfig = parseBlockTitle(input);
+				title = "{" + blockConfig.title + "}" + pauseForFirstTitle;
+				pauseForFirstTitle = "";
+				block = blockConfig.block;
+				output += prefix + "\\begin{" + block + "}" + title + "\n";
+				title = "{}";
+				if(input.isBlockLine()){
+					output += prefix + "\t" + input.getLine().trimLeft() + "\n";
+					input.index++;
+				}
+				if(input.isListLine()){
+					output += parseList(input, prefix + "\t");
+				}
+				output += prefix + "\\end{" + block + "}\n";
+			}
+			return output;
+		}
+		
+		function parseList(input, prefix){
+			output = prefix + "\\begin{enumerate}\n";
+			while(input.isListLine()){				
+				output += prefix + "\t\\item " + input.getLine().trimLeft() + "\n";
+				input.nextLine();
+			}
+			output += prefix + "\\end{enumerate}\n"
+			return output;
+		}
+		
+		function copyOutput(){
+			const output = document.getElementById("output").value;
+			navigator.clipboard.writeText(output);
+		}
+		
+		const tabProcessor = function enableTab(event){
+			if (event.key == 'Tab') {
+				event.preventDefault();
+				var start = this.selectionStart;
+				var end = this.selectionEnd;
+				// set textarea value to: text before caret + tab + text after caret
+				this.value = this.value.substring(0, start) + "\t" + this.value.substring(end);
+				// put caret at right position again
+				this.selectionStart = this.selectionEnd = start + 1;
+			}
+		};
+		
+		document.getElementById("input").addEventListener('keydown', tabProcessor);
+		document.getElementById("output").addEventListener('keydown', tabProcessor);
+	</script>
+</body>
+</html>
