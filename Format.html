@@ -85,14 +85,14 @@
 			while(input.hasLine()){
 				if(input.isSection()){
 					output += "\n" + parseSection(input, "\t");
-					hasPause = true;
+					hasPause = false;
 				} else if(input.isFrameLine()){
 					output += "\n" + parseFrame(input, "\t", hasPause);
-					hasPause = false;
+					hasPause = true;
 				} else {
 					output += input.getLine(); // other commands
 					input.nextLine();
-					hasPause = false;
+					hasPause = true;
 				}
 			}
 			return output;
@@ -147,7 +147,7 @@
 		
 		function parseBlock(input, prefix, hasPause){
 			output = "";
-			pauseForFirstTitle = "\\pause"
+			pauseForFirstTitle = hasPause ? "\\pause" : "";
 			while(input.isBlockLine() || input.isListLine()){
 				blockConfig = parseBlockTitle(input);
 				title = "{" + blockConfig.title + "}" + pauseForFirstTitle;
